@@ -10,6 +10,23 @@ import pygame
 import pygame.freetype
 import pygame_menu
 
+# Initializing global variables
+# Holds the current player
+player = None 
+
+# Holds tokens that need to be placed
+player1_start_tokens = None
+player2_start_tokens = None
+
+# Holds tokens that a player has in total
+player1_total_tokens = None
+player2_total_tokens = None
+
+# Holds check for if a mill was formed
+mill_check = False
+
+# Creates array for board
+arr = []
 
 def show_board(board: list):
     """
@@ -28,31 +45,34 @@ def create_board():
     """
     # Set the rows and the columns to 7
     row, col = (7, 7)
+    global arr
+    arr = []
 
     # Create a 2D Array full of 0's with 7 rows and 7 columns
     arr = [[0 for i in range(row)] for j in range(col)]
 
-    # Fill every non playable point with a -1
+    # Fill every non playable point with negative numbers -1/red/outer ring, -2/purple/middle ring, -3/black/center point
+    # Did this to help differentiate between the layers and make mills easier to spot
     arr[0][1] = -1
     arr[0][2] = -1
     arr[0][4] = -1
     arr[0][5] = -1
     arr[1][0] = -1
-    arr[1][2] = -1
-    arr[1][4] = -1
+    arr[1][2] = -2
+    arr[1][4] = -2
     arr[1][6] = -1
     arr[2][0] = -1
-    arr[2][1] = -1
-    arr[2][5] = -1
+    arr[2][1] = -2
+    arr[2][5] = -2
     arr[2][6] = -1
-    arr[3][3] = -1
+    arr[3][3] = -3
     arr[4][0] = -1
-    arr[4][1] = -1
-    arr[4][5] = -1
+    arr[4][1] = -2
+    arr[4][5] = -2
     arr[4][6] = -1
     arr[5][0] = -1
-    arr[5][2] = -1
-    arr[5][4] = -1
+    arr[5][2] = -2
+    arr[5][4] = -2
     arr[5][6] = -1
     arr[6][1] = -1
     arr[6][2] = -1
@@ -76,7 +96,7 @@ def swap_player(current: str) -> str:
 # Function that checks for the creation of a new mill given a piece has just been played
 # Should be called with the x and y coordinates of the point just played, and the game board for arr
 # Returns true if it finds a mill, returns false if not
-def check_adjacent(x, y, arr):
+def check_adjacent(x, y, board):
     """
     This checks for adjacent items in the board
     """
@@ -85,8 +105,8 @@ def check_adjacent(x, y, arr):
     col = []
     # Compile the playable points of the row
     for i in range(0, 7):
-        if arr[x][i] is not -1:
-            row.append(arr[x][i])
+        if board[x][i] >= 0:
+            row.append(board[x][i])
 
     # If the row was the middle row, cut it down to the 3 adjacent points
     if len(row) == 6:
@@ -97,8 +117,8 @@ def check_adjacent(x, y, arr):
 
     # Compile the playable points of the column
     for i in range(0, 7):
-        if arr[i][y] is not -1:
-            col.append(arr[i][y])
+        if board[i][y] >= 0:
+            col.append(board[i][y])
 
     # If the column was the middle column, cut it down to the 3 adjacent points
     if len(col) == 6:
@@ -115,6 +135,7 @@ def check_adjacent(x, y, arr):
     if col[0] == col[1] == col[2]:
         mill = True
 
+    
     # Return if a mill was found
     return mill
 
@@ -197,7 +218,7 @@ def drop_location(location: tuple) -> tuple:
         y_location = -1
 
     # This takes you to the menu function
-    if (x > 35) and (x < 115) and (y > 390) and (y < 430):
+    if (x > 35) and (x < 115) and (y > 450) and (y < 500):
         menu()
 
     # Returns made ordered pair coordinates for game use
@@ -209,31 +230,60 @@ def update_grid(grid: list, location: tuple):
     """
     This changes the game grid with a 1 for player 1 and a 2 for player 2
     """
+    # Declare global variables
+    global arr
     global player
+    global player1_start_tokens
+    global player2_start_tokens
+    global mill_check
 
-    # If location in not usable then pass through function
-    if (location[0] == -1) or (location[1] == -1):
-        pass
+   
 
-    # if location is usable
-    elif grid[location[0]][location[1]] == 0:
+    if (player1_start_tokens != 0 or player2_start_tokens != 0):
 
-        # Place 1 in spot and swap to player 2
-        if player == "Player_1":
-            grid[location[0]][location[1]] = 1
-            player = swap_player(player)
+        # If location in not usable then pass through function
+        if (location[0] < 0) or (location[1] < 0):
+            pass
 
-        # Place 2 in spot and swap to player 1
+        # if location is usable
+        elif grid[location[0]][location[1]] == 0:
+
+            # If this is player 1
+            if player == "Player_1":
+                # Set tile to current player
+                grid[location[0]][location[1]] = 1
+                # Decrement placement token
+                player1_start_tokens -= 1
+                # Check if this created a mill
+                mill_check = False
+                if check_adjacent(location[0], location[1], arr) == True:
+                    mill_check = True
+                # Swap players
+                player = swap_player(player)
+
+                
+                
+
+            # If this is player 2
+            elif player == "Player_2": 
+                # Set tile to current player               
+                grid[location[0]][location[1]] = 2
+                # Decrement placement token
+                player2_start_tokens -= 1
+                # Check if this created a mill
+                check_adjacent(location[0], location[1], arr)
+                # Swap players
+                player = swap_player(player)
+                
+                
+
+        # Output this to console in case something goes wrong
         else:
-            grid[location[0]][location[1]] = 2
-            player = swap_player(player)
+            print("invalid")
 
-    # Output this to console in case something goes wrong
-    else:
-        print("invalid")
-
-    # Output board in console to see update made
-    show_board(grid)
+        # Output board in console to see update made
+        show_board(grid)
+        print (player1_start_tokens, player2_start_tokens)
 
 
 def two_player_game():
@@ -245,9 +295,19 @@ def two_player_game():
     # Shows board in console for developer use
     show_board(board)
 
-    # Created global player so the use of player can be used in functions
+    # Declare global player variable
     global player
+    # Set it to player 1
     player = "Player_1"
+
+    # Declare global starting tokens  
+    global player1_start_tokens    
+    global player2_start_tokens
+    global mill_check
+
+    # Set them to 9 at start of game
+    player1_start_tokens = 9   
+    player2_start_tokens = 9
 
     # Sets standard for screen dimensions
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -265,6 +325,8 @@ def two_player_game():
                 pos = pygame.mouse.get_pos()
                 # Updates game grid in console
                 update_grid(board, drop_location(pos))
+                if mill_check == True: # Checks if that move made a mill
+                    print ("Mill was found") # Prints in terminal
                 # Outputs clicked coordinates in console
                 print("Click ", pos)
 
@@ -281,6 +343,14 @@ def two_player_game():
                 if board[y][x] == -1:
                     pygame.draw.rect(screen, red, rect)
 
+                # If not usable spot place red square
+                if board[y][x] == -2:
+                    pygame.draw.rect(screen, purple, rect)
+
+                # If not usable spot place red square
+                if board[y][x] == -3:
+                    pygame.draw.rect(screen, black, rect)
+
                 # If usable spot place white square
                 if board[y][x] == 0:
                     pygame.draw.rect(screen, white, rect)
@@ -289,23 +359,31 @@ def two_player_game():
                 if board[y][x] == 1:
                     pygame.draw.rect(screen, green, rect)
 
-                # If player 2 spot place green square
+                # If player 2 spot place blue square
                 if board[y][x] == 2:
                     pygame.draw.rect(screen, blue, rect)
 
         # If player 1 turn then output player 1
         if player == "Player_1":
-            player_turn = "Player 1's Turn"
-            GAME_FONT.render_to(screen, (40, 350), player_turn, (100, 100, 100))
+            player_turn = "Player 1's Turn" 
+            player_tokens = "Pieces left: " + str(player1_start_tokens) # Displays remaining tokens            
+
+            GAME_FONT.render_to(screen, (40, 350), player_turn, (100, 100, 100)) # Places text
+            pygame.draw.rect(screen, green, (40, 390, 40, 40)) # Displays players token avatar
+            GAME_FONT.render_to(screen, (90, 400), player_tokens, (100, 100, 100)) # Places text
 
         # If player 2 turn then output player 2
-        else:
-            player_turn = "Player 2's Turn"
-            GAME_FONT.render_to(screen, (40, 350), player_turn, (100, 100, 100))
+        elif player == "Player_2":
+            player_turn = "Player 2's Turn" 
+            player_tokens = "Pieces left: " + str(player2_start_tokens) # Displays remaining tokens
+            
+            GAME_FONT.render_to(screen, (40, 350), player_turn, (100, 100, 100)) # Places text
+            pygame.draw.rect(screen, blue, (40, 390, 40, 40)) # Displays players token avatar
+            GAME_FONT.render_to(screen, (90, 400), player_tokens, (100, 100, 100)) # Places text
 
         # This is to output the menu button
-        pygame.draw.rect(screen, white, (35, 390, 80, 40))
-        GAME_FONT.render_to(screen, (40, 400), "Menu", (100, 100, 100))
+        pygame.draw.rect(screen, white, (40, 450, 80, 40))
+        GAME_FONT.render_to(screen, (50, 460), "Menu", (100, 100, 100))
 
         pygame.display.flip()
 
@@ -325,6 +403,7 @@ red = (200, 0, 0)
 green = (0, 200, 0)
 blue = (0, 0, 200)
 black = (0, 0, 0)
+purple = (185,0,255)
 
 # Distances for consistency
 WIDTH = 1000
