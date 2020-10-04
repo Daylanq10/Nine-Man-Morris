@@ -140,6 +140,8 @@ def check_adjacent(x, y, board):
     return mill
 
 
+
+
 def menu():
     """
     This creates the menu and allows for different game options
@@ -237,7 +239,6 @@ def update_grid(grid: list, location: tuple):
     global player2_start_tokens
     global mill_check
 
-   
 
     if (player1_start_tokens != 0 or player2_start_tokens != 0):
 
@@ -261,7 +262,6 @@ def update_grid(grid: list, location: tuple):
                 # Swap players
                 player = swap_player(player)
 
-                
                 
 
             # If this is player 2
@@ -300,6 +300,8 @@ def two_player_game():
     # Set it to player 1
     player = "Player_1"
 
+    mill = False
+
     # Declare global starting tokens  
     global player1_start_tokens    
     global player2_start_tokens
@@ -326,30 +328,36 @@ def two_player_game():
                 # Updates game grid in console
                 update_grid(board, drop_location(pos))
                 if mill_check == True: # Checks if that move made a mill
+                    mill = True
                     print ("Mill was found") # Prints in terminal
-                # Outputs clicked coordinates in console
                 print("Click ", pos)
+
+
+        # This outputs the game grid from the console to screen with correct coordinates
 
         # Resets screen so things can be changed in between frames
         screen.fill(black)
 
-        # This outputs the game grid from the console to screen with correct coordinates
+        #draw various board components
+        # outer rectangle
+        pygame.draw.rect(screen, (150,150,150), (285, 85, 605, 605), 3)
+
+        # middle rectangle
+        pygame.draw.rect(screen, (150,150,150), (385, 185, 405, 405), 3)
+
+        # inner rectangle
+        pygame.draw.rect(screen, (150,150,150), (485, 285, 205, 205), 3)
+
+        # lines
+        pygame.draw.line(screen, (150,150,150), (585, 85), (585, 285), 3)
+        pygame.draw.line(screen, (150,150,150), (585, 485), (585, 685), 3)
+        pygame.draw.line(screen, (150, 150, 150), (250, 385), (485, 385), 3)
+        pygame.draw.line(screen, (150, 150, 150), (685, 385), (885, 385), 3)
+
         for x in range(7):
             for y in range(7):
                 rect = pygame.Rect(x * (BLOCK_SIZE + MARGIN) + LEFT_D, y * (BLOCK_SIZE + MARGIN) + TOP_D, BLOCK_SIZE,
                                    BLOCK_SIZE)
-
-                # If not usable spot place red square
-                if board[y][x] == -1:
-                    pygame.draw.rect(screen, red, rect)
-
-                # If not usable spot place red square
-                if board[y][x] == -2:
-                    pygame.draw.rect(screen, purple, rect)
-
-                # If not usable spot place red square
-                if board[y][x] == -3:
-                    pygame.draw.rect(screen, black, rect)
 
                 # If usable spot place white square
                 if board[y][x] == 0:
@@ -362,6 +370,7 @@ def two_player_game():
                 # If player 2 spot place blue square
                 if board[y][x] == 2:
                     pygame.draw.rect(screen, blue, rect)
+
 
         # If player 1 turn then output player 1
         if player == "Player_1":
@@ -381,9 +390,15 @@ def two_player_game():
             pygame.draw.rect(screen, blue, (40, 390, 40, 40)) # Displays players token avatar
             GAME_FONT.render_to(screen, (90, 400), player_tokens, (100, 100, 100)) # Places text
 
+        #if mill, display text, needs remove piece function
+        if mill == True:
+            GAME_FONT.render_to(screen, (25,150), " Mill found!", white)
+
+
         # This is to output the menu button
         pygame.draw.rect(screen, white, (40, 450, 80, 40))
         GAME_FONT.render_to(screen, (50, 460), "Menu", (100, 100, 100))
+
 
         pygame.display.flip()
 
