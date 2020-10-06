@@ -1,7 +1,7 @@
 """
 Upsetti Spaghetti Coders
 Kole Keeney, Chris Munns, Daylan Quinn and Greg Robson
-10/4/20
+10/5/20
 CS 449
 
 Nine Men's Morris main file
@@ -22,8 +22,16 @@ player2_start_tokens = None
 player1_total_tokens = None
 player2_total_tokens = None
 
-# Holds check for if a mill was formed
-mill_check = False
+# Holds tokens that a player has in play
+player1_board_tokens = None
+player2_board_tokens = None
+
+# Holds current number of mills for each player
+player1_mills = None
+player2_mills = None
+
+# Holds check for if and how many mills was found
+mill_check = None
 
 # Creates array for board
 arr = []
@@ -96,11 +104,11 @@ def swap_player(current: str) -> str:
 # Function that checks for the creation of a new mill given a piece has just been played
 # Should be called with the x and y coordinates of the point just played, and the game board for arr
 # Returns true if it finds a mill, returns false if not
-def check_adjacent(x, y, board):
+def check_adjacent(x, y, board, player):
     """
     This checks for adjacent items in the board
     """
-    mill = False
+    mill = 0    
     row = []
     col = []
     # Compile the playable points of the row
@@ -127,16 +135,17 @@ def check_adjacent(x, y, board):
         else:
             col = col[3:]
 
-    # Check if the 3 of the row are all the same, if so, there is a mill
-    if row[0] == row[1] == row[2]:
-        mill = True
+    # Check if the 3 of the row are all the same and match the selected player, if so, there is a mill
+    if row[0] == row[1] == row[2] == player:        
+        mill += 1
 
-    # Check if the 3 of the column are all the same, if so, there is a mill
-    if col[0] == col[1] == col[2]:
-        mill = True
+    # Check if the 3 of the column are all the same and match the selected player, if so, there is a mill
+    if col[0] == col[1] == col[2] == player:        
+        mill += 1
 
-    
-    # Return if a mill was found
+    # Print in terminal for testing 
+    print("mills found ", mill)
+    # Return how many mills were found
     return mill
 
 
@@ -183,7 +192,7 @@ def drop_location(location: tuple) -> tuple:
     x = location[0]
     y = location[1]
 
-    # THIS ALL FINDS THE ROW TO USE
+    # THIS ALL FINDS THE Columns TO USE
     if (y > 650) and (y < 725):
         x_location = 6
     elif (y > 550) and (y < 625):
@@ -201,7 +210,7 @@ def drop_location(location: tuple) -> tuple:
     else:
         x_location = -1
 
-    # THIS ALL FINDS THE COLUMN TO USE
+    # THIS ALL FINDS THE ROWS TO USE
     if (x > 250) and (x < 325):
         y_location = 0
     elif (x > 350) and (x < 425):
@@ -224,6 +233,7 @@ def drop_location(location: tuple) -> tuple:
         menu()
 
     # Returns made ordered pair coordinates for game use
+    #for now not correctly formatting should be (y,x) to be consistent
     location = (x_location, y_location)
     return location
 
@@ -239,10 +249,15 @@ def update_grid(grid: list, location: tuple):
     global player2_start_tokens
     global player1_total_tokens
     global player2_total_tokens
+    global player1_board_tokens
+    global player2_board_tokens
+    global player1_mills
+    global player2_mills
     global mill_check
 
+
     # If there is currently not a mill
-    if not mill_check:
+    if mill_check == 0:
 
         # If the player has a token
         if player1_start_tokens != 0 or player2_start_tokens != 0:
@@ -260,13 +275,16 @@ def update_grid(grid: list, location: tuple):
                     grid[location[0]][location[1]] = 1
                     # Decrement placement token
                     player1_start_tokens -= 1
-                    # Check if this created a mill
-                    if check_adjacent(location[0], location[1], arr):
-                        mill_check = True
+                    # Check if this created a mill and how many
+                    if check_adjacent(location[0], location[1], arr, 1) > 0:
+                        # Set mill check
+                        mill_check = check_adjacent(location[0], location[1], arr, 1)
+                        # Add mill/s to player
+                        player1_mills += mill_check
                     # Swap players if a mill was not created
                     else:
                         player = swap_player(player)
-
+                    
 
 
                 # If this is player 2
@@ -275,62 +293,103 @@ def update_grid(grid: list, location: tuple):
                     grid[location[0]][location[1]] = 2
                     # Decrement placement token
                     player2_start_tokens -= 1
-                    # Check if this created a mill
-                    if check_adjacent(location[0], location[1], arr):
-                        mill_check = True
+                    # Check if this created a mill and how many
+                    if check_adjacent(location[0], location[1], arr, 2) > 0:
+                        # Set mill check
+                        mill_check = check_adjacent(location[0], location[1], arr, 2)
+                        # Add mill/s to player
+                        player2_mills += mill_check
                     # Swap players if a mill was not created
                     else:
                         player = swap_player(player)
+                    
 
     # If a mill just occurred and a piece is about to be removed
     else:
         removable = True
-
+      
         # If location in not usable then pass through function
         if (location[0] < 0) or (location[1] < 0):
             pass
 
         # If location has a player 2 tile and this is player 1
         elif grid[location[0]][location[1]] == 2 and player == "Player_1":
-
-            # If the piece being removed belongs to a mill
-            if check_adjacent(location[0], location[1], arr):
-
-                # If the player 2 has more than 3 tokens
-                if player2_total_tokens - player2_start_tokens != 3:
-                    # Set removable to false, as that piece cannot be removed
+            # Set found mills
+            mill_check = check_adjacent(location[0], location[1], arr, 2)
+            # If the piece being removed has mill/s
+            if mill_check > 0:                
+                # If the number of mills don't match placed tokens
+                if player2_mills/player2_board_tokens < .30:
                     removable = False
-
+                #If there is a stacked mill check to see if there is a loose token
+                else:
+                    for i in range (0,7):
+                        for j in range (0,7):
+                            if arr[i][j] == 2:
+                                if check_adjacent(i,j,arr,2) == 0:
+                                    removable = False
+                    
+            # If it passes the test
             if removable:
+                # Check how many mills will be removed and take them from player
+                if mill_check > 0:
+                        player2_mills -= mill_check
                 # Set tile to empty
                 grid[location[0]][location[1]] = 0
+                # Remove token from Player 2
+                player2_total_tokens -= 1
                 # Swap players
                 player = swap_player(player)
                 # Set mill check to false now that it has occurred
-                mill_check = False
+                mill_check = 0
 
         # If location has a player 1 tile and this is player 2
         elif grid[location[0]][location[1]] == 1 and player == "Player_2":
-
-            # If the piece being removed belongs to a mill
-            if check_adjacent(location[0], location[1], arr):
-
-                # If the player 1 has more than 3 tokens
-                if player1_total_tokens - player1_start_tokens != 3:
-                    # Set removable to false, as that piece cannot be removed
+            # Set found mills
+            mill_check = check_adjacent(location[0], location[1], arr, 1)
+            # If the piece being removed has mill/s
+            if mill_check > 0:
+                # If the number of mills don't match placed tokens
+                if player1_mills/player1_board_tokens < .30:
                     removable = False
-
+                #If there is a stacked mill check to see if there is a loose token
+                else:
+                    for i in range (0,7):
+                        for j in range (0,7):
+                            if arr[i][j] == 1:
+                                if check_adjacent(i,j,arr,1) == 0:
+                                    removable = False
+            # If it passes the test
             if removable:
+                # Check how many mills will be removed and take them from player
+                if mill_check > 0:
+                        player1_mills -= mill_check
                 # Set tile to empty
                 grid[location[0]][location[1]] = 0
+                # Remove token from Player 1
+                player1_total_tokens -= 1
                 # Swap players
                 player = swap_player(player)
                 # Set mill check to false now that it has occurred
-                mill_check = False
+                mill_check = 0
 
+    # Update and check if all token counts are consistent after each update
+    if player1_board_tokens > player1_total_tokens:
+        player1_board_tokens = player1_total_tokens
+    else:
+        player1_board_tokens = player1_total_tokens - player1_start_tokens
+
+    if player2_board_tokens > player2_total_tokens:
+        player2_board_tokens = player2_total_tokens
+    else:
+        player2_board_tokens = player2_total_tokens - player2_start_tokens
     # Output board in console to see update made
     show_board(grid)
-    print (player1_start_tokens, player2_start_tokens)
+    # Print click (x,y)
+    print(location[1],location[0])
+    # Print all tracked tokens and mills for each player
+    print (player1_start_tokens, player1_total_tokens, player1_board_tokens, player1_mills)
+    print (player2_start_tokens, player2_total_tokens, player2_board_tokens, player2_mills)
 
 
 def two_player_game():
@@ -352,16 +411,24 @@ def two_player_game():
     global player2_start_tokens
     global player1_total_tokens
     global player2_total_tokens
+    global player1_board_tokens
+    global player2_board_tokens
+    global player1_mills
+    global player2_mills
     global mill_check
 
     # Set / Reset the default of mill_check to false
-    mill_check = False
+    mill_check = 0
 
     # Set them to 9 at start of game
     player1_start_tokens = 9   
     player2_start_tokens = 9
     player1_total_tokens = 9
     player2_total_tokens = 9
+    player1_board_tokens = 0
+    player2_board_tokens = 0
+    player1_mills = 0
+    player2_mills = 0
 
     # Sets standard for screen dimensions
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -369,7 +436,6 @@ def two_player_game():
     # Run until the user asks to quit
     running = True
     while running:
-
         # Did the user click the window close button?
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
@@ -379,8 +445,8 @@ def two_player_game():
                 pos = pygame.mouse.get_pos()
                 # Updates game grid in console
                 update_grid(board, drop_location(pos))
-                if mill_check: # Checks if that move made a mill
-                    mill_check = True
+                if mill_check > 0: # Checks if that move made a mill
+                    #mill_check = True
                     print ("Mill was found") # Prints in terminal
                     pos = pygame.mouse.get_pos()
                     update_grid(board, drop_location(pos))
@@ -445,7 +511,7 @@ def two_player_game():
             GAME_FONT.render_to(screen, (90, 400), player_tokens, (100, 100, 100)) # Places text
 
         #if mill_check, display text, needs remove piece function
-        if mill_check:
+        if mill_check > 0:
             GAME_FONT.render_to(screen, (25,150), " Mill found!", white)
 
 
