@@ -189,7 +189,7 @@ def menu():
 
         # These are for all the buttons on the menu and corresponding functions
         # TO POSSIBLY IMPLEMENT SCORE KEEPING FROM DATABASE?
-        menu.add_text_input('Name :', default='John Doe')
+        menu.add_text_input('Name: ', default='John Doe')
         menu.add_button('Play Computer', computer_game)
         menu.add_button('2-Player Game', two_player_game)
         menu.add_button('Quit', pygame_menu.events.EXIT)
@@ -442,7 +442,8 @@ def move_piece(grid: list, location: list, player):
     if (location[0] < 0) or (location[1] < 0):
         pass
 
-    # if location is usable and another piece isnt already selected, finds valid moves, saves location, and triggers selection
+    # if location is usable and another piece is not already selected,
+    # finds valid moves, saves location, and triggers selection
     elif grid[location[0]][location[1]] == player and not selected:
         find_moves(grid, location)
         last_x = location[0]
@@ -664,9 +665,11 @@ def display_stats(turn, stage):
     # Set player and color
     if player_turn == "Player 1's Turn":
         player = player_1
+        other = player_2
         color = green
     else:
         player = player_2
+        other = player_1
         color = blue
     # If stage one
     if stage == "Stage 1: Placing":
@@ -690,9 +693,9 @@ def display_stats(turn, stage):
         GAME_FONT.render_to(
             screen, (40, 50), stage, (100, 100, 100))
     # Else for both stage 2 or 3
-    else:
+    elif stage == "Stage 2: Moving" or stage == "Stage 3: Flying":
         # Set strings for board tokens
-        player_board_tokens = "Pieces on Board: " + \
+        player_board_tokens = "Pieces left: " + \
             str(player.board_tokens)  # Displays board tokens
         # Displays players turn
         STAT_FONT.render_to(
@@ -703,6 +706,20 @@ def display_stats(turn, stage):
         STAT_FONT.render_to(
             screen, (40, 400), player_board_tokens, (100, 100, 100))
         # Displays current stage
+        GAME_FONT.render_to(
+            screen, (40, 50), stage, (100, 100, 100))
+    else:
+        # Displays a popup endgame message
+        printout = str(other.get_total_tokens()) + " to 2!"
+        if player.number:
+            STAT_FONT.render_to(
+                screen, (40, 350), "Player 2 Wins " + printout, (100, 100, 100))
+        else:
+            STAT_FONT.render_to(
+                screen, (40, 350), "Player 1 Wins " + printout, (100, 100, 100))
+        STAT_FONT.render_to(
+            screen, (40, 400), "Hit menu to exit!", (100, 100, 100))
+        # Displays current stage of Game Over
         GAME_FONT.render_to(
             screen, (40, 50), stage, (100, 100, 100))
 
@@ -776,6 +793,7 @@ def two_player_game():
         pygame.draw.line(screen, (150, 150, 150), (250, 385), (485, 385), 3)
         pygame.draw.line(screen, (150, 150, 150), (685, 385), (885, 385), 3)
 
+        # Draw the board
         for x in range(7):
             for y in range(7):
                 rect = pygame.Rect(x * (BLOCK_SIZE + MARGIN) + LEFT_D, y * (BLOCK_SIZE + MARGIN) + TOP_D, BLOCK_SIZE,
@@ -818,9 +836,12 @@ def two_player_game():
                 # Then stage 2 and display stats
                 stage = "Stage 2: Moving"
                 display_stats(player_turn, stage)
-            else:
+            elif player_1.start_tokens == 0 and player_1.get_total_tokens() == 3:
                 # Stage 3 and display stats
                 stage = "Stage 3: Flying"
+                display_stats(player_turn, stage)
+            else:
+                stage = "Game Over"
                 display_stats(player_turn, stage)
 
         # If player 2 turn then output player 2
@@ -836,9 +857,12 @@ def two_player_game():
                 # Then stage 2 and display stats
                 stage = "Stage 2: Moving"
                 display_stats(player_turn, stage)
-            else:
+            elif player_2.start_tokens == 0 and player_2.get_total_tokens() == 3:
                 # Stage 3 and display stats
                 stage = "Stage 3: Flying"
+                display_stats(player_turn, stage)
+            else:
+                stage = "Game Over"
                 display_stats(player_turn, stage)
 
         # if mill_check, display text, needs remove piece function
