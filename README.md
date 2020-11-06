@@ -8,3 +8,6 @@ Tic tac toe, made with pygame as a template for possible usage. Pygame makes tra
 as tkinter, but that may not be an issue once we have our board flushed out. Menus are also pretty easy. Right now the random mode is a bit messy, adds multiple pieces
 after each loop, and doesnt let the computer finish properly, but the human v human function works great with some input checks as well. Can explain in more detail
 if needed!
+
+bugs:
+player turn is opposite
