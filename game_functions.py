@@ -4,10 +4,36 @@ THIS FILE IS TO HOLD THE FUNCTIONS USED TO CREATE THE MAIN FILE AND GAME
 SEPARATED FUNCTIONS FROM MAIN FILE TO ENABLE PYTEST
 """
 
+"""
+IN FIND_MOVES THERE ARE TWO UNUSED VARIABLES. NOT SURE IF IT IS AN ERROR OR IF THEY ARE JUST NOT NEEDED.
+"""
+
+"""
+CANNOT GET TEST_CHANGE_PLAYER TO WORK. IT HAS TO DO WITH THE FACT THAT THE FUNCTION SWAP_PLAYER WORKS WITH GLOBAL 
+VARIABLES AND I AM HAVING TROUBLE REPLICATING THAT IN PYTEST.  LOOK BELOW FOR UPDATED INFO.
+"""
+
+"""
+IN ORDER FOR TEST_CHANGE_PLAYER TO WORK I HAD TO ADD VARIABLES OF PLAYER_1 AND PLAYER_2 TO SWAP_PLAYER FUNCTION.
+EVERYTHING STILL WORKS AS IT DID BEFORE BUT I JUST WANT TO LET THAT BE KNOWN IN CASE IT EFFECTED SOMETHING
+I DID NOT CATCH.  I LEFT ALL THE GLOBAL VARIABLES OF PLAYER_1 AND PLAYER_2 AND DID NOT MESS WITH THEM.
+"""
+
+"""
+TESTING IS NOT COMPLETE BUT IS STARTED. TEST_PIECE_DECREMENT AND TEST_PIECE_PLACEMENT ARE NOT OPERATIONAL.
+THERE ARE ISSUES WITH NESTED FUNCTIONS I BELIEVE THAT MAKES TESTING DIFFICULT
+"""
+
+"""
+THE LOCATION OF DISPLAYING IN DISPLAY_STATS THAT SOMEONE HAS WON DUE TO THERE BEING NO MORE PLACEMENTS ON THE BOARD RUNS INTO 
+THE ACUTAL GAME BOARD. NEEDS TO BE MOVED AROUND A LITTLE FOR PRETTIER GUI.
+"""
+
+
 import pygame
 import pygame.freetype
 import pygame_menu
-
+import copy
 import board
 import player
 
@@ -53,128 +79,14 @@ GAME_FONT = pygame.freetype.Font(None, 24)
 STAT_FONT = pygame.freetype.Font(None, 20)
 
 
-def show_board(board: list):
-    """
-    This is used to show the contents of the board in the console
-    """
-
-    # Just a statement to print out a representation of the board
-    for i in range(0, 7):
-        print(board[i])
-
-
-# Function that initializes the game board then returns it
-def create_board():
-    """
-    This creates the board with usable and unusable coordinates
-    """
-    # Set the rows and the columns to 7
-    row, col = (7, 7)
-    global arr
-    arr = []
-
-    # Create a 2D Array full of 0's with 7 rows and 7 columns
-    arr = [[0 for i in range(row)] for j in range(col)]
-
-    # Fill every non playable point with negative numbers -1/red/outer ring, -2/purple/middle ring, -3/black/center point
-    # Did this to help differentiate between the layers and make mills easier to spot
-    arr[0][1] = -1
-    arr[0][2] = -1
-    arr[0][4] = -1
-    arr[0][5] = -1
-    arr[1][0] = -1
-    arr[1][2] = -2
-    arr[1][4] = -2
-    arr[1][6] = -1
-    arr[2][0] = -1
-    arr[2][1] = -2
-    arr[2][5] = -2
-    arr[2][6] = -1
-    arr[3][3] = -3
-    arr[4][0] = -1
-    arr[4][1] = -2
-    arr[4][5] = -2
-    arr[4][6] = -1
-    arr[5][0] = -1
-    arr[5][2] = -2
-    arr[5][4] = -2
-    arr[5][6] = -1
-    arr[6][1] = -1
-    arr[6][2] = -1
-    arr[6][4] = -1
-    arr[6][5] = -1
-
-    # Return the new board
-    return arr
-
-
-def swap_player():
-    if player_1.turn:
-        player_1.turn = False
-        player_2.turn = True
-    else:
-        player_1.turn = True
-        player_2.turn = False
-
-
-# Function that checks for the creation of a new mill given a piece has just been played
-# Should be called with the x and y coordinates of the point just played, and the game board for arr
-# Returns true if it finds a mill, returns false if not
-def check_adjacent(x, y, board:board.Board, p):
-    """
-    This checks for adjacent items in the board
-    """
-
-    mill = 0
-    row = []
-    col = []
-
-    # Compile the playable points of the row
-    for i in range(0, 7):
-        if board.grid[x][i] >= 0:
-            row.append(board.grid[x][i])
-
-    # If the row was the middle row, cut it down to the 3 adjacent points
-    if len(row) == 6:
-        if y < 3:
-            row = row[:3]
-        else:
-            row = row[3:]
-
-    # Compile the playable points of the column
-    for i in range(0, 7):
-        if board.grid[i][y] >= 0:
-            col.append(board.grid[i][y])
-
-    # If the column was the middle column, cut it down to the 3 adjacent points
-    if len(col) == 6:
-        if x < 3:
-            col = col[:3]
-        else:
-            col = col[3:]
-
-    # Check if the 3 of the row are all the same and match the selected player, if so, there is a mill
-    if row[0] == row[1] == row[2] == p:
-        mill += 1
-
-    # Check if the 3 of the column are all the same and match the selected player, if so, there is a mill
-    if col[0] == col[1] == col[2] == p:
-        mill += 1
-
-    # Print in terminal for testing
-    print("mills found ", mill)
-    # Return how many mills were found
-    return mill
-
-
 def menu():
     """
     This creates the menu and allows for different game options
     """
 
     # Run until the user asks to quit
-    menu = True
-    while menu:
+    menu_view = True
+    while menu_view:
         # Did the user click the window close button?
         for event in pygame.event.get():  # User did something
             print(event)
@@ -186,18 +98,18 @@ def menu():
         surface = pygame.display.set_mode((WIDTH, HEIGHT))
 
         # Menu setup
-        menu = pygame_menu.Menu(
+        menu_screen = pygame_menu.Menu(
             HEIGHT, WIDTH, 'NINE-MEN\'S-MORRIS', theme=pygame_menu.themes.THEME_DARK)
 
         # These are for all the buttons on the menu and corresponding functions
         # TO POSSIBLY IMPLEMENT SCORE KEEPING FROM DATABASE?
-        menu.add_text_input('Name: ', default='John Doe')
-        menu.add_button('Play Computer', computer_game)
-        menu.add_button('2-Player Game', two_player_game)
-        menu.add_button('Quit', pygame_menu.events.EXIT)
+        menu_screen.add_text_input('Name: ', default='John Doe')
+        menu_screen.add_button('Play Computer', computer_game)
+        menu_screen.add_button('2-Player Game', two_player_game)
+        menu_screen.add_button('Quit', pygame_menu.events.EXIT)
 
         # Loops until choice is made
-        menu.mainloop(surface)
+        menu_screen.mainloop(surface)
 
 
 def drop_location(location: tuple) -> tuple:
@@ -255,22 +167,30 @@ def drop_location(location: tuple) -> tuple:
     location = (x_location, y_location)
     return location
 
-# works with find_moves function, checks space, if valid changes color and adds it to/returns moves list
+
+def swap_player(player_1: player.Player, player_2: player.Player):
+    """
+    Swaps global variables of two players labeled player_1 and player_2
+    """
+    if player_1.turn:
+        player_1.turn = False
+        player_2.turn = True
+    else:
+        player_1.turn = True
+        player_2.turn = False
 
 
-def add(board: board.Board, x, y):
-    if board.grid[x][y] == 0:
-        board.grid[x][y] = 3
+# Function that checks for the creation of a new mill given a piece has just been played
+# Should be called with the x and y coordinates of the point just played, and the game board
+# Returns true if it finds a mill, returns false if not
+def check_adjacent(x: int, y: int, board: board.Board, player_piece: int) -> int:
+    """
+    This checks for adjacent items in the board
+    """
 
-# finds adjacent moves in phase 2
-
-
-def find_moves(board: board.Board, location: tuple):
-
+    mill = 0
     row = []
     col = []
-    x = location[0]
-    y = location[1]
 
     # Compile the playable points of the row
     for i in range(0, 7):
@@ -290,6 +210,67 @@ def find_moves(board: board.Board, location: tuple):
             col.append(board.grid[i][y])
 
     # If the column was the middle column, cut it down to the 3 adjacent points
+    if len(col) == 6:
+        if x < 3:
+            col = col[:3]
+        else:
+            col = col[3:]
+
+    # Check if the 3 of the row are all the same and match the selected player, if so, there is a mill
+    if row[0] == row[1] == row[2] == player_piece:
+        mill += 1
+
+    # Check if the 3 of the column are all the same and match the selected player, if so, there is a mill
+    if col[0] == col[1] == col[2] == player_piece:
+        mill += 1
+
+    # Print in terminal for testing
+    print("mills found ", mill)
+    # Return how many mills were found
+    return mill
+
+
+# works with find_moves function, checks space, if valid changes color and adds it to/returns moves list
+def add(board: board.Board, x: int, y: int):
+    """
+    If valid spot on board '0' then change to '3' for possible moves list
+    """
+    if board.grid[x][y] == 0:
+        board.grid[x][y] = 3
+
+
+# finds adjacent moves in phase 2
+def find_moves(board: board.Board, location: tuple):
+    """
+    Finds adjacent moves that are playable for phase 2
+    """
+    row = []
+    col = []
+    x = location[0]
+    y = location[1]
+
+    # Compile the playable points of the row
+    for i in range(0, 7):
+        if board.grid[x][i] >= 0:
+            row.append(board.grid[x][i])
+
+    # If the row was the middle row, cut it down to the 3 adjacent points
+
+    # THIS STATEMENT IS NOT USED
+    if len(row) == 6:
+        if y < 3:
+            row = row[:3]
+        else:
+            row = row[3:]
+
+    # Compile the playable points of the column
+    for i in range(0, 7):
+        if board.grid[i][y] >= 0:
+            col.append(board.grid[i][y])
+
+    # If the column was the middle column, cut it down to the 3 adjacent points
+
+    # THIS STATEMENT IS NOT USED
     if len(col) == 6:
         if x < 3:
             col = col[:3]
@@ -410,8 +391,11 @@ def find_moves(board: board.Board, location: tuple):
         add(board, 3, 6)
 
 
-def place_piece(board:board.Board, location: list, player, player_token):
-
+def place_piece(board: board.Board, location: tuple, player: player.Player, player_token: int):
+    """
+    This allows for the current player to place their game piece/check mills/change game totals
+    This is for phase 1
+    """
     global mill_check
 
     # If location in not usable then pass through function
@@ -429,11 +413,13 @@ def place_piece(board:board.Board, location: list, player, player_token):
         player.mills += mill_check
     # Swap players if a mill was not created
     else:
-        swap_player()
+        swap_player(player_1, player_2)
 
 
-def move_piece(board:board.Board, location: list, player):
-    global arr
+def move_piece(board: board.Board, location: tuple, player: int):
+    """
+    Allows the player to move a selected peice for phase 2
+    """
     global player_1
     global player_2
     global mill_check
@@ -462,7 +448,7 @@ def move_piece(board:board.Board, location: list, player):
                     board.grid[i][j] = 0
                 if board.grid[i][j] == 10 or board.grid[i][j] == 20:
                     board.grid[i][j] /= 10
-        find_moves(board.grid, location)
+        find_moves(board, location)
         last_x = location[0]
         last_y = location[1]
         selected = True
@@ -481,10 +467,13 @@ def move_piece(board:board.Board, location: list, player):
                 if board.grid[i][j] == 10 or board.grid[i][j] == 20:
                     board.grid[i][j] /= 10
         if mill_check == 0:
-            swap_player()
+            swap_player(player_1, player_2)
 
 
-def fly_piece(board: board.Board, location: list, player):
+def fly_piece(board: board.Board, location: tuple, player: int):
+    """
+    Allows a player to have a selected piece 'fly' for phase 3
+    """
     global arr
     global player_1
     global player_2
@@ -528,7 +517,7 @@ def fly_piece(board: board.Board, location: list, player):
                 if board.grid[i][j] == 10 or board.grid[i][j] == 20:
                     board.grid[i][j] /= 10
         if mill_check == 0:
-            swap_player()
+            swap_player(player_1, player_2)
 
 
 def update_grid(board: board.Board, location: tuple):
@@ -617,7 +606,7 @@ def update_grid(board: board.Board, location: tuple):
                 # Remove token from Player 2
                 player_2.board_tokens -= 1
                 # Swap players
-                swap_player()
+                swap_player(player_1, player_2)
                 # Set mill check to false now that it has occurred
                 mill_check = 0
 
@@ -647,12 +636,12 @@ def update_grid(board: board.Board, location: tuple):
                 # Remove token from Player 1
                 player_1.board_tokens -= 1
                 # Swap players
-                swap_player()
+                swap_player(player_1, player_2)
                 # Set mill check to false now that it has occurred
                 mill_check = 0
 
     # Output board in console to see update made
-    show_board(board.grid)
+    board.display()
     # Print click (x,y)
     print(location[1], location[0])
     # Print all tracked tokens and mills for each player
@@ -662,7 +651,45 @@ def update_grid(board: board.Board, location: tuple):
           player_2.board_tokens, player_2.mills)
 
 
-def display_stats(turn, stage):
+def playable(board: board.Board, first_player: player.Player, second_player: player.Player) -> bool:
+    """
+    This checks the board with the current player and uses find_moves to determine if there is a playable move.
+    Returns true if there is a playable move and false if there is not.
+    Using import of copy to make deepcopy
+    """
+    # Dictates which piece to look for
+    if first_player.turn:
+        piece = 1
+    if second_player.turn:
+        piece = 2
+
+    # Counter to determine if playable spots are avaliable
+    play_spot = 0
+
+    temp_board = copy.deepcopy(board)
+
+    # Checks for pieces that are playable and uses find_moves
+    for row in range(7):
+        for col in range(7):
+            if temp_board.grid[row][col] == piece:
+                find_moves(temp_board, (row, col))
+
+    # If find_moves placed 3 on grid then increment counter
+    for row in temp_board.grid:
+        if 3 in row:
+            play_spot += 1
+
+    if play_spot > 0:
+        return True
+    else:
+        return False
+
+
+def display_stats(turn: str, stage: str):
+    """
+    This takes into account whos turn it is and what stage that player is in and then displays for
+    current player use.  Also holds win conditions for a player with less than 3 pieces left.
+    """
     player_turn = turn
     # Set player and color
     if player_turn == "Player 1's Turn":
@@ -677,9 +704,9 @@ def display_stats(turn, stage):
     if stage == "Stage 1: Placing":
         # Set strings for board and place tokens
         player_start_tokens = "Pieces to Place:   " + \
-            str(player.start_tokens)  # Displays placing tokens
+                              str(player.start_tokens)  # Displays placing tokens
         player_board_tokens = "Pieces on Board: " + \
-            str(player.board_tokens)  # Displays board tokens
+                              str(player.board_tokens)  # Displays board tokens
         # Displays players turn
         STAT_FONT.render_to(
             screen, (90, 300), player_turn, (100, 100, 100))
@@ -698,7 +725,7 @@ def display_stats(turn, stage):
     elif stage == "Stage 2: Moving" or stage == "Stage 3: Flying":
         # Set strings for board tokens
         player_board_tokens = "Pieces left: " + \
-            str(player.board_tokens)  # Displays board tokens
+                              str(player.board_tokens)  # Displays board tokens
         # Displays players turn
         STAT_FONT.render_to(
             screen, (90, 350), player_turn, (100, 100, 100))
@@ -710,9 +737,12 @@ def display_stats(turn, stage):
         # Displays current stage
         GAME_FONT.render_to(
             screen, (40, 50), stage, (100, 100, 100))
-    else:
+    elif stage == "Game Over: no moves" or stage == "Game Over":
         # Displays a popup endgame message
-        printout = str(other.get_total_tokens()) + " to 2!"
+        if stage == "Game Over":
+            printout = str(other.get_total_tokens()) + " to 2!"
+        else:
+            printout = "No playable moves!"
         if player.number:
             STAT_FONT.render_to(
                 screen, (40, 350), "Player 2 Wins " + printout, (100, 100, 100))
@@ -731,15 +761,9 @@ def two_player_game():
     This is where the output and logic is put together to create a two player game
     """
     # Creates game board (if menu is visited then resets board -> can be changed if needed)
-
-#board = create_board()
-
     game_board = board.Board()
 
     # Shows board in console for developer use
-
-#show_board(board)
-
     game_board.display()
 
     # Create both players
@@ -773,15 +797,12 @@ def two_player_game():
                 pos = pygame.mouse.get_pos()
                 # Updates game grid in console
 
-#update_grid(board, drop_location(pos))
-
                 update_grid(game_board, drop_location(pos))
 
                 if mill_check > 0:  # Checks if that move made a mill
                     # mill_check = True
                     print("Mill was found")  # Prints in terminal
                     pos = pygame.mouse.get_pos()
-#update_grid(board, drop_location(pos))
                     update_grid(game_board, drop_location(pos))
                 print("Click ", pos)
 
@@ -813,32 +834,26 @@ def two_player_game():
                                    BLOCK_SIZE)
 
                 # If usable spot place white square
-#if board[y][x] == 0:
                 if game_board.grid[y][x] == 0:
                     pygame.draw.rect(screen, white, rect)
 
                 # If player 1 spot place green square
-#if board[y][x] == 1:
                 if game_board.grid[y][x] == 1:
                     pygame.draw.rect(screen, green, rect)
 
                 # If player 1 selected spot place dark green square
-#if board[y][x] == 10:
                 if game_board.grid[y][x] == 10:
                     pygame.draw.rect(screen, dark_green, rect)
 
                 # If player 2 spot place blue square
-#if board[y][x] == 2:
                 if game_board.grid[y][x] == 2:
                     pygame.draw.rect(screen, blue, rect)
 
                 # If player 2 selected spot place dark blue square
-#if board[y][x] == 20:
                 if game_board.grid[y][x] == 20:
                     pygame.draw.rect(screen, dark_blue, rect)
 
                 # empty cells that a player can move to in phase two are assigned 3
-#if board[y][x] == 3:
                 if game_board.grid[y][x] == 3:
                     pygame.draw.rect(screen, orange, rect)
 
@@ -849,19 +864,24 @@ def two_player_game():
             if player_1.start_tokens != 0:
                 # Then stage 1 then display stats
                 stage = "Stage 1: Placing"
-                display_stats(player_turn, stage)
             # If start tokens are empty but total tokens above three
             elif player_1.start_tokens == 0 and player_1.get_total_tokens() > 3:
                 # Then stage 2 and display stats
                 stage = "Stage 2: Moving"
-                display_stats(player_turn, stage)
+
+                # This checks if there is a usable move for win condition
+                movable = playable(game_board, player_1, player_2)
+                if not movable:
+                    stage = "Game Over: no moves"
+
             elif player_1.start_tokens == 0 and player_1.get_total_tokens() == 3:
                 # Stage 3 and display stats
                 stage = "Stage 3: Flying"
-                display_stats(player_turn, stage)
             else:
+                # Win condition for less than 3 tokens available
                 stage = "Game Over"
-                display_stats(player_turn, stage)
+
+            display_stats(player_turn, stage)
 
         # If player 2 turn then output player 2
         else:
@@ -870,19 +890,24 @@ def two_player_game():
             if player_2.start_tokens != 0:
                 # Then stage 1 then display stats
                 stage = "Stage 1: Placing"
-                display_stats(player_turn, stage)
             # If start tokens are empty but total tokens above three
             elif player_2.start_tokens == 0 and player_2.get_total_tokens() > 3:
                 # Then stage 2 and display stats
                 stage = "Stage 2: Moving"
-                display_stats(player_turn, stage)
+
+                # This checks if there is a usable move for win condition
+                movable = playable(game_board, player_1, player_2)
+                if not movable:
+                    stage = "Game Over: no moves"
+
             elif player_2.start_tokens == 0 and player_2.get_total_tokens() == 3:
                 # Stage 3 and display stats
                 stage = "Stage 3: Flying"
-                display_stats(player_turn, stage)
             else:
+                # Win condition for less than 3 tokens available
                 stage = "Game Over"
-                display_stats(player_turn, stage)
+
+            display_stats(player_turn, stage)
 
         # if mill_check, display text, needs remove piece function
         if mill_check > 0:

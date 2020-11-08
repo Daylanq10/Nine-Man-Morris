@@ -61,11 +61,3 @@ class Board:
         # Just a statement to print out a representation of the board
         for i in range(0, 7):
             print(self.grid[i])
-
-"""
-board = Board()
-board.display()
-print()
-board.grid[0][2] = 'X'
-board.display()
-"""
