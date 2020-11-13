@@ -57,7 +57,7 @@ class Board:
         """
         This is used to show the contents of the board in the console
         """
-
+        print()
         # Just a statement to print out a representation of the board
         for i in range(0, 7):
             print(self.grid[i])
