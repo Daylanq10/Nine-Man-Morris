@@ -30,14 +30,13 @@ THE ACUTAL GAME BOARD. NEEDS TO BE MOVED AROUND A LITTLE FOR PRETTIER GUI.
 """
 
 
+# Initializing both players
 import pygame
 import pygame.freetype
 import pygame_menu
 import copy
 import board
 import player
-
-# Initializing both players
 player_1 = None
 player_2 = None
 
@@ -800,6 +799,7 @@ def two_player_game():
                 update_grid(game_board, drop_location(pos))
 
                 if mill_check > 0:  # Checks if that move made a mill
+                    # mill_check = True
                     print("Mill was found")  # Prints in terminal
                     pos = pygame.mouse.get_pos()
                     update_grid(game_board, drop_location(pos))

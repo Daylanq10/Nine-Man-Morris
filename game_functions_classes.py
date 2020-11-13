@@ -200,7 +200,6 @@ def find_moves(location: tuple):
     """
     Finds adjacent moves that are playable for phase 2 and returns a list of playable spots
     """
-
     # checks the location and adds it as a move, which will highlight it in add
     if location == (0, 0):
         return [(0, 3), (3, 0)]
@@ -501,32 +500,40 @@ def playable(game_board: board.Board, first_player: player.Player, second_player
     pass
 
 
-def display_stats(current_player: player.Player):
+def display_stats(current_player: player.Player, first_player: player.Player, second_player:player.Player):
     """
-    This takes into account whos turn it is and what stage that player is in and then displays for
-    current player use.  Also holds win conditions for a player with less than 3 pieces left.
+    This takes into account whose turn is coming next. It is set to the next turn because the swap_player
+    function does not update until the next iteration of the game update. Ensured to start player 1.
     """
-    if current_player.number == 1:
-        player_turn = "Player 1"
+    if current_player.number == 1 and current_player.board_tokens == 0:
+        upcoming_player = current_player
+        player_turn = "Player 1's turn"
         color = green
-    else:
-        player_turn = "Player 2"
+
+    elif current_player.number == 1:
+        upcoming_player = second_player
+        player_turn = "Player 2's turn"
         color = blue
+
+    else:
+        upcoming_player = first_player
+        player_turn = "Player 1's turn"
+        color = green
 
     if current_player.start_tokens != 0:
         current_player.stage = "Stage 1: Placing"
-    elif current_player.start_tokens == 0 and current_player.board_tokens > 3:
+    elif current_player.start_tokens == 0 and upcoming_player.board_tokens > 3:
         current_player.stage = "Stage 2: Moving"
-    elif current_player.start_tokens == 0 and current_player.board_tokens == 3:
+    elif current_player.start_tokens == 0 and upcoming_player.board_tokens == 3:
         current_player.stage = "Stage 3: Flying"
-        
+
     # If stage one
     if current_player.stage == "Stage 1: Placing":
         # Set strings for board and place tokens
         player_start_tokens = "Pieces to Place:   " + \
-                              str(current_player.start_tokens)  # Displays placing tokens
+                              str(upcoming_player.start_tokens)  # Displays placing tokens
         player_board_tokens = "Pieces on Board: " + \
-                              str(current_player.board_tokens)  # Displays board tokens
+                              str(upcoming_player.board_tokens)  # Displays board tokens
         # Displays players turn
         STAT_FONT.render_to(
             screen, (90, 300), player_turn, (100, 100, 100))
@@ -542,10 +549,10 @@ def display_stats(current_player: player.Player):
         GAME_FONT.render_to(
             screen, (40, 50), current_player.stage, (100, 100, 100))
     # Else for both stage 2 or 3
-    elif current_player.stage == "Stage 2: Moving" or current_player.stage == "Stage 3: Flying":
+    elif current_player.stage == "Stage 2: Moving" or upcoming_player.stage == "Stage 3: Flying":
         # Set strings for board tokens
         player_board_tokens = "Pieces left: " + \
-                              str(current_player.board_tokens)  # Displays board tokens
+                              str(upcoming_player.board_tokens)  # Displays board tokens
         # Displays players turn
         STAT_FONT.render_to(
             screen, (90, 350), player_turn, (100, 100, 100))
@@ -678,7 +685,7 @@ def two_player_game():
                     pygame.draw.rect(screen, orange, rect)
 
         # used for output of data
-        display_stats(player_to_use)
+        display_stats(player_to_use, player_1, player_2)
 
         # if mill_check, display text, needs remove piece function
         if player_to_use.new_mill:
