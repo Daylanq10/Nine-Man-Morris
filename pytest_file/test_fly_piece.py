@@ -1,4 +1,4 @@
-import game_functions_classes
+import game_functions
 import board
 import player
 
@@ -20,7 +20,7 @@ def test_player_1_first_click():
     player_1.board_tokens = 9
     player_1.moves = 9
 
-    game_functions_classes.fly_piece(test_grid, (4, 4), player_1)
+    game_functions.fly_piece(test_grid, (4, 4), player_1)
 
     assert test_grid.grid == [[1, -1, -1, 2, -1, -1, 1],
                               [-1, 2, -2, 1, -2, 2, -1],
@@ -54,7 +54,7 @@ def test_player_1_reclick_position():
     player_1.past_possible = [(2, 3), (2, 4), (3, 2), (3, 4), (4, 2), (4, 3)]
     player_1.clicked_pos = (4, 4)
 
-    game_functions_classes.fly_piece(test_grid, (4, 4), player_1)
+    game_functions.fly_piece(test_grid, (4, 4), player_1)
 
     assert test_grid.grid == [[1, -1, -1, 2, -1, -1, 1],
                               [-1, 2, -2, 1, -2, 2, -1],
@@ -88,7 +88,7 @@ def test_player_1_move_made():
     player_1.past_possible = [(2, 3), (2, 4), (3, 2), (3, 4), (4, 2), (4, 3)]
     player_1.clicked_pos = (4, 4)
 
-    game_functions_classes.fly_piece(test_grid, (2, 3), player_1)
+    game_functions.fly_piece(test_grid, (2, 3), player_1)
 
     assert test_grid.grid == [[1, -1, -1, 2, -1, -1, 1],
                               [-1, 2, -2, 1, -2, 2, -1],

@@ -1,4 +1,4 @@
-import game_functions_classes
+import game_functions
 import player
 import board
 
@@ -21,14 +21,14 @@ def test_update_grid():
     player_1 = player.Player(1, True)
     player_2 = player.Player(2, True)
 
-    game_functions_classes.update_grid(test_grid, (0, 0), player_1)
-    game_functions_classes.update_grid(test_grid, (1, 1), player_2)
+    game_functions.update_grid(test_grid, (0, 0), player_1)
+    game_functions.update_grid(test_grid, (1, 1), player_2)
 
-    game_functions_classes.update_grid(test_grid, (0, 3), player_1)
-    game_functions_classes.update_grid(test_grid, (1, 3), player_2)
+    game_functions.update_grid(test_grid, (0, 3), player_1)
+    game_functions.update_grid(test_grid, (1, 3), player_2)
 
-    game_functions_classes.update_grid(test_grid, (0, 6), player_1)
-    game_functions_classes.update_grid(test_grid, (2, 3), player_2)
+    game_functions.update_grid(test_grid, (0, 6), player_1)
+    game_functions.update_grid(test_grid, (2, 3), player_2)
 
     assert test_grid.grid == [[1, -1, -1, 1, -1, -1, 1],
                               [-1, 2, -2, 2, -2, 0, -1],

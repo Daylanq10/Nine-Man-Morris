@@ -8,7 +8,7 @@ THE PLAYER CLASS IN THE NINE MAN'S MORRIS GAME.
 class Board:
     def __init__(self):
         self.grid = self.create_board()
-        self.is_playable = playable()
+        self.is_playable = self.playable()
 
     # Function that initializes the game board then returns it
     def create_board(self):
@@ -63,14 +63,13 @@ class Board:
         for i in range(0, 7):
             print(self.grid[i])
 
-
-def playable():
-    """
-    This sets for only allowing clicking of playable spots
-    """
-    spots = []
-    for x in range(7):
-        for y in range(7):
-            spots.append((x, y))
-
-    return spots
+    def playable(self):
+        """
+        This sets for only allowing clicking of playable spots
+        """
+        usable = []
+        for x in range(7):
+            for y in range(7):
+                if self.grid[x][y] == 0:
+                    usable.append((x,y))
+        return usable

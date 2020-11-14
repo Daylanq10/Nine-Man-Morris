@@ -1,4 +1,4 @@
-import game_functions_classes
+import game_functions
 import board
 import player
 
@@ -17,7 +17,7 @@ def test_removal_no_mill():
     player_1 = player.Player(1, True)
     player_2 = player.Player(2, True)
 
-    game_functions_classes.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
+    game_functions.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
 
     assert test_grid.grid == [[0, -1, -1, 0, -1, -1, 0],
                               [-1, 0, -2, 0, -2, 0, -1],
@@ -49,10 +49,10 @@ def test_removal_with_mill_other_piece_present():
     player_2.mill_positions = [[(3, 0), (3, 1), (3, 2)]]
 
     # player 1 just created this mill
-    game_functions_classes.check_adjacent(0, 3, test_grid, player_1)
+    game_functions.check_adjacent(0, 3, test_grid, player_1)
 
     # attempts to click on a player 2 mill piece
-    game_functions_classes.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
+    game_functions.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
 
     # removal rejected and board is the same
     assert test_grid.grid == [[0, -1, -1, 1, -1, -1, 0],
@@ -91,10 +91,10 @@ def test_removal_with_double_mill_in_play():
     player_2.mill_positions = [[(3, 0), (3, 1), (3, 2)], [(1, 1), (3, 1), (5, 1)]]
 
     # player 1 just created this mill
-    game_functions_classes.check_adjacent(0, 3, test_grid, player_1)
+    game_functions.check_adjacent(0, 3, test_grid, player_1)
 
     # attempts to click on a player 2 mill piece
-    game_functions_classes.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
+    game_functions.remove_piece(test_grid, (3, 1), player_1, player_1, player_2)
 
     # removal rejected and board is the same
     assert test_grid.grid == [[0, -1, -1, 1, -1, -1, 0],

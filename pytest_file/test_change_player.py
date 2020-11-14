@@ -4,7 +4,7 @@ THIS FILE IS FOR TESTING PLAYER SWAPPING FUNCTION USING PYTEST
 IF USING PYCHARM MAKE SURE TO SET PYTEST AS DEFAULT TESTING IN PREFERENCES
 """
 
-import game_functions_classes
+import game_functions
 import player
 
 
@@ -20,7 +20,7 @@ def test_user_swap_1_to_2():
     player_1.moves = 3
     player_2 = player.Player(2, True)
     player_2.moves = 2
-    assert game_functions_classes.swap_player(player_1, player_2) == player_2
+    assert game_functions.swap_player(player_1, player_2) == player_2
 
 
 def test_user_swap_2_to_1():
@@ -29,4 +29,4 @@ def test_user_swap_2_to_1():
     player_1.moves = 3
     player_2 = player.Player(2, True)
     player_2.moves = 3
-    assert game_functions_classes.swap_player(player_1, player_2)
+    assert game_functions.swap_player(player_1, player_2)
