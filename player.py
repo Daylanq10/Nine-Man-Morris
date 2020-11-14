@@ -14,7 +14,8 @@ class Player:
         self.board_tokens = 0
 
         self.mills = 0  # needs to be updated in functions to allow for certain criteria
-        self.new_mill = None
+        self.mill_positions = []
+        self.new_mill = False
 
         self.selected_move = False
 

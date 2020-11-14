@@ -5,8 +5,7 @@ SEPARATED FUNCTIONS FROM MAIN FILE TO ENABLE PYTEST
 """
 
 """
-HAVING ISSUES WITH DOUBLE MILLS. THINK IT IS DUE TO SETTING OF NEW MILL IN ADJ CHECK AND THEN 
-IN REMOVAL IT IS NOT CHANGING NEW MILL TO FALSE SINCE THERE IS STILL A MILL SOMEHOW
+EDIT REMOVE_PIECE TO USE MILL_POSITIONS TO FIX ERROR
 """
 
 import pygame
@@ -141,58 +140,98 @@ def swap_player(first_player: player.Player, second_player: player.Player) -> pl
         return second_player
 
 
-# Function that checks for the creation of a new mill given a piece has just been played
-# Should be called with the x and y coordinates of the point just played, and the game board
-# Returns true if it finds a mill, returns false if not
+def mill_found(count: int, current_player: player.Player, mill_positions: list) -> int:
+    mills = 0
+    if count == 3:
+        current_player.new_mill = True
+        current_player.mills += 1
+        if mill_positions not in current_player.mill_positions:
+            current_player.mill_positions.append(mill_positions)
+        mills = 1
+    return mills
+
+
 def check_adjacent(x: int, y: int, game_board: board.Board, current_player: player.Player) -> int:
     """
-    This checks for adjacent items in the board for mills and returns the number of mills found from the
-    last placed move for the current player
+    This checks for the playable positions of the locations and checks the vertical and horizontal directions
+    for one or two mills formed. Returns 1 for singe mill and 2 for double mill.
     """
+    mills = 0
+    count = 0
+    positions = []
 
-    mill = 0
-    row = []
-    col = []
-
-    # Compile the playable points of the row
-    for i in range(0, 7):
-        if game_board.grid[x][i] >= 0:
-            row.append(game_board.grid[x][i])
-
-    # If the row was the middle row, cut it down to the 3 adjacent points
-    if len(row) == 6:
+    # if middle row
+    if x == 3:
+        # Finds if mill left side
         if y < 3:
-            row = row[:3]
-        else:
-            row = row[3:]
+            for i in range(3):
+                if game_board.grid[3][i] == current_player.number:
+                    count += 1
+                    positions.append((3, i))
+        mills += mill_found(count, current_player, positions)
+        positions = []
+        count = 0
+        # Finds if mill right side
+        if y > 3:
+            for i in range(4, 7):
+                if game_board.grid[3][i] == current_player.number:
+                    count += 1
+                    positions.append((3, i))
+        mills += mill_found(count, current_player, positions)
+        positions = []
+        count = 0
+        # now column check
+        for i in range(7):
+            if game_board.grid[i][y] == current_player.number:
+                count += 1
+                positions.append((i, y))
+        mills += mill_found(count, current_player, positions)
+        return mills
 
-    # Compile the playable points of the column
-    for i in range(0, 7):
-        if game_board.grid[i][y] >= 0:
-            col.append(game_board.grid[i][y])
-
-    # If the column was the middle column, cut it down to the 3 adjacent points
-    if len(col) == 6:
+    # if middle column
+    if y == 3:
+        # Finds if mill top side
         if x < 3:
-            col = col[:3]
-        else:
-            col = col[3:]
+            for i in range(3):
+                if game_board.grid[i][3] == current_player.number:
+                    count += 1
+                    positions.append((i, 3))
+        mills += mill_found(count, current_player, positions)
+        positions = []
+        count = 0
+        # Finds if mill bottom side
+        if x > 3:
+            for i in range(4, 7):
+                if game_board.grid[i][3] == current_player.number:
+                    count += 1
+                    positions.append((i, 3))
+        mills += mill_found(count, current_player, positions)
+        positions = []
+        count = 0
+        # now row check
+        for i in range(7):
+            if game_board.grid[x][i] == current_player.number:
+                count += 1
+                positions.append((x, i))
+        mills += mill_found(count, current_player, positions)
+        return mills
 
-    # Check if the 3 of the row are all the same and match the selected player, if so, there is a mill
-    if row[0] == row[1] == row[2] == current_player.number:
-        mill += 1
-
-    # Check if the 3 of the column are all the same and match the selected player, if so, there is a mill
-    if col[0] == col[1] == col[2] == current_player.number:
-        mill += 1
-
-    # If a new mill has been formed then new_mill for current player is set ot true
-    # This allows for the remove_piece function to be called later
-    if mill > 0:
-        current_player.new_mill = True
-
-    # Return how many mills were found
-    return mill
+    if x != 3 and y != 3:
+        # now row check
+        for i in range(7):
+            if game_board.grid[x][i] == current_player.number:
+                count += 1
+                positions.append((x, i))
+        mills += mill_found(count, current_player, positions)
+        positions = []
+        count = 0
+        # now column check
+        for i in range(7):
+            if game_board.grid[i][y] == current_player.number:
+                count += 1
+                positions.append((i, y))
+        mills += mill_found(count, current_player, positions)
+        return mills
 
 
 # finds adjacent moves in phase 2
@@ -288,9 +327,7 @@ def place_piece(game_board: board.Board, location: tuple, current_player: player
     current_player.board_tokens += 1
     current_player.inc_moves()
     # Check if this created a mill and how many
-    if check_adjacent(location[0], location[1], game_board, current_player) > 0:
-        # Add mill/s to player
-        current_player.mills += check_adjacent(location[0], location[1], game_board, current_player)
+    check_adjacent(location[0], location[1], game_board, current_player)
 
 
 def move_piece(game_board: board.Board, location: tuple, current_player: player.Player):
@@ -325,9 +362,14 @@ def move_piece(game_board: board.Board, location: tuple, current_player: player.
             if item[0] != location[0] or item[1] != location[1]:
                 game_board.grid[item[0]][item[1]] = 0
         current_player.past_possible = []
-        if check_adjacent(location[0], location[1], game_board, current_player) > 0:
-            # Add mill/s to player
-            current_player.mills += check_adjacent(location[0], location[1], game_board, current_player)
+        check_adjacent(location[0], location[1], game_board, current_player)
+
+        # removes mill if moved out and takes out of mill_positions list
+        for positions in list(current_player.mill_positions):
+            if current_player.clicked_pos in positions:
+                current_player.mill_positions.remove(positions)
+                current_player.mills -= 1
+
         # move has been made so resetting stats for current player
         current_player.clicked_pos = None
         current_player.past_possible = []
@@ -357,16 +399,22 @@ def fly_piece(game_board: board.Board, location: tuple, current_player: player.P
         current_player.clicked_pos = None
 
         # If a spot has been clicked on this allows for clicking on possible positions to move piece
-    elif game_board.grid[location[0]][location[1]] == current_player.number * 10 and location in current_player.past_possible:
+    elif game_board.grid[location[0]][
+        location[1]] == current_player.number * 10 and location in current_player.past_possible:
         game_board.grid[location[0]][location[1]] = current_player.number
         game_board.grid[current_player.clicked_pos[0]][current_player.clicked_pos[1]] = 0
         for item in current_player.past_possible:
             if item[0] != location[0] or item[1] != location[1]:
                 game_board.grid[item[0]][item[1]] = 0
         current_player.past_possible = []
-        if check_adjacent(location[0], location[1], game_board, current_player) > 0:
-            # Add mill/s to player
-            current_player.mills += check_adjacent(location[0], location[1], game_board, current_player)
+        check_adjacent(location[0], location[1], game_board, current_player)
+
+        # removes mill if moved out and takes out of mill_positions list
+        for positions in list(current_player.mill_positions):
+            if current_player.clicked_pos in positions:
+                current_player.mill_positions.remove(positions)
+                current_player.mills -= 1
+
         # move has been made so resetting stats for current player
         current_player.clicked_pos = None
         current_player.past_possible = []
@@ -381,29 +429,18 @@ def update_grid(game_board: board.Board, location: tuple, current_player: player
     ####STAGE 1####
     if current_player.start_tokens != 0:
 
-        if (location[0] < 0) or (location[1] < 0):
-            pass
-
-        elif game_board.grid[location[0]][location[1]] == 0:
+        if game_board.grid[location[0]][location[1]] == 0:
             place_piece(game_board, location, current_player)
 
     ####STAGE 2####
     elif current_player.start_tokens == 0 and current_player.board_tokens > 3:
 
-        if (location[0] < 0) or (location[1] < 0):
-            pass
-
-        else:
-            move_piece(game_board, location, current_player)
+        move_piece(game_board, location, current_player)
 
     ####STAGE 3####
     elif current_player.start_tokens == 0 and current_player.board_tokens == 3:
 
-        if (location[0] < 0) or (location[1] < 0):
-            pass
-
-        else:
-            fly_piece(game_board, location, current_player)
+        fly_piece(game_board, location, current_player)
 
     game_board.display()
     print("Clicked location ->", "(" + str(location[1]) + "," + str(location[0]) + ")")
@@ -436,8 +473,14 @@ def remove_piece(game_board: board.Board, location: tuple,
     # If location has a player 2 tile and this is player 1
     if game_board.grid[location[0]][location[1]] == opposing_player.number:
 
+        cont = False
+        # used this to create condition if location is inside mill_positions
+        for positions in opposing_player.mill_positions:
+            if location in positions:
+                cont = True
+
         # If the piece being removed has mill/s
-        if check_adjacent(location[0], location[1], game_board, opposing_player) > 0:
+        if cont:
             # If the number of mills don't match placed tokens
             if opposing_player.mills / opposing_player.board_tokens < .30:
                 removable = False
@@ -446,8 +489,9 @@ def remove_piece(game_board: board.Board, location: tuple,
                 for i in range(0, 7):
                     for j in range(0, 7):
                         if game_board.grid[i][j] == opposing_player.number:
-                            if check_adjacent(i, j, game_board, opposing_player) == 0:
-                                removable = False
+                            for positions in opposing_player.mill_positions:
+                                if location not in positions:
+                                    removable = False
 
         # If it passes the test
         if removable:
@@ -455,10 +499,12 @@ def remove_piece(game_board: board.Board, location: tuple,
             current_player.new_mill = False
 
             # Check how many mills will be removed and take them from player
-            if check_adjacent(location[0], location[1], game_board, opposing_player) > 0:
-                opposing_player.mills -= check_adjacent(location[0], location[1], game_board, opposing_player)
-            # Set tile to empty
             game_board.grid[location[0]][location[1]] = 0
+            # removes mill if moved out and takes out of mill_positions list
+            for positions in list(opposing_player.mill_positions):
+                if location in positions:
+                    opposing_player.mill_positions.remove(positions)
+                    opposing_player.mills -= 1
             # Remove token from Player 2
             opposing_player.board_tokens -= 1
 
@@ -500,31 +546,26 @@ def playable(game_board: board.Board, first_player: player.Player, second_player
     pass
 
 
-def display_stats(current_player: player.Player, first_player: player.Player, second_player:player.Player):
+def display_stats(current_player: player.Player, first_player: player.Player, second_player: player.Player):
     """
     This takes into account whose turn is coming next. It is set to the next turn because the swap_player
     function does not update until the next iteration of the game update. Ensured to start player 1.
     """
-    if current_player.number == 1 and current_player.board_tokens == 0:
-        upcoming_player = current_player
+
+    if current_player.number == 2 or first_player.board_tokens == 0 or first_player.new_mill:
+        upcoming_player = first_player
         player_turn = "Player 1's turn"
         color = green
-
-    elif current_player.number == 1:
+    if current_player.number == 1 or second_player.new_mill:
         upcoming_player = second_player
         player_turn = "Player 2's turn"
         color = blue
 
-    else:
-        upcoming_player = first_player
-        player_turn = "Player 1's turn"
-        color = green
-
-    if current_player.start_tokens != 0:
+    if upcoming_player.start_tokens != 0:
         current_player.stage = "Stage 1: Placing"
-    elif current_player.start_tokens == 0 and upcoming_player.board_tokens > 3:
+    elif upcoming_player.start_tokens == 0 and upcoming_player.board_tokens > 3:
         current_player.stage = "Stage 2: Moving"
-    elif current_player.start_tokens == 0 and upcoming_player.board_tokens == 3:
+    elif upcoming_player.start_tokens == 0 and upcoming_player.board_tokens == 3:
         current_player.stage = "Stage 3: Flying"
 
     # If stage one
@@ -622,80 +663,86 @@ def two_player_game():
                 pos = pygame.mouse.get_pos()
                 # print("Click ->", pos)    # Commented this because it was getting annoying
 
-                # This is used if a new mill was formed so action can be taken to remove a piece
-                if player_1.new_mill or player_2.new_mill:  # Checks if that move made a mill
-                    pos = pygame.mouse.get_pos()
-                    remove_piece(game_board, drop_location(pos), player_to_use, player_1, player_2)
+                # if clicked on playable position (avoids clicking off board)
+                # DOES NOT TAKE INTO ACCOUNT IF CLICKED ON POSITION THAT COULD BE USED BUT IS NOT. FOR
+                # INSTANCE IF YOU CLICK ON ANOTHER PLAYERS PIECE IT MOVES THE GAME ALONG
+                if drop_location(pos) in game_board.is_playable:
 
-                # This is a standard move
-                else:
-                    # Updates game grid in console
-                    player_to_use = swap_player(player_1, player_2)
-                    update_grid(game_board, drop_location(pos), player_to_use)
+                    # This is used if a new mill was formed so action can be taken to remove a piece
+                    if player_1.new_mill or player_2.new_mill:  # Checks if that move made a mill
+                        pos = pygame.mouse.get_pos()
+                        remove_piece(game_board, drop_location(pos), player_to_use, player_1, player_2)
 
-        # This outputs the game grid from the console to screen with correct coordinates
+                    # This is a standard move
+                    else:
+                        # Updates game grid in console
+                        player_to_use = swap_player(player_1, player_2)
+                        update_grid(game_board, drop_location(pos), player_to_use)
 
-        # Resets screen so things can be changed in between frames
-        screen.fill(black)
+            # This outputs the game grid from the console to screen with correct coordinates
 
-        # draw various board components
-        # outer rectangle
-        pygame.draw.rect(screen, (150, 150, 150), (285, 85, 605, 605), 3)
+            # Resets screen so things can be changed in between frames
+            screen.fill(black)
 
-        # middle rectangle
-        pygame.draw.rect(screen, (150, 150, 150), (385, 185, 405, 405), 3)
+            # draw various board components
+            # outer rectangle
+            pygame.draw.rect(screen, (150, 150, 150), (285, 85, 605, 605), 3)
 
-        # inner rectangle
-        pygame.draw.rect(screen, (150, 150, 150), (485, 285, 205, 205), 3)
+            # middle rectangle
+            pygame.draw.rect(screen, (150, 150, 150), (385, 185, 405, 405), 3)
 
-        # lines
-        pygame.draw.line(screen, (150, 150, 150), (585, 85), (585, 285), 3)
-        pygame.draw.line(screen, (150, 150, 150), (585, 485), (585, 685), 3)
-        pygame.draw.line(screen, (150, 150, 150), (250, 385), (485, 385), 3)
-        pygame.draw.line(screen, (150, 150, 150), (685, 385), (885, 385), 3)
+            # inner rectangle
+            pygame.draw.rect(screen, (150, 150, 150), (485, 285, 205, 205), 3)
 
-        # Draw the board
-        for x in range(7):
-            for y in range(7):
-                rect = pygame.Rect(x * (BLOCK_SIZE + MARGIN) + LEFT_D, y * (BLOCK_SIZE + MARGIN) + TOP_D, BLOCK_SIZE,
-                                   BLOCK_SIZE)
+            # lines
+            pygame.draw.line(screen, (150, 150, 150), (585, 85), (585, 285), 3)
+            pygame.draw.line(screen, (150, 150, 150), (585, 485), (585, 685), 3)
+            pygame.draw.line(screen, (150, 150, 150), (250, 385), (485, 385), 3)
+            pygame.draw.line(screen, (150, 150, 150), (685, 385), (885, 385), 3)
 
-                # If usable spot place white square
-                if game_board.grid[y][x] == 0:
-                    pygame.draw.rect(screen, white, rect)
+            # Draw the board
+            for x in range(7):
+                for y in range(7):
+                    rect = pygame.Rect(x * (BLOCK_SIZE + MARGIN) + LEFT_D, y * (BLOCK_SIZE + MARGIN) + TOP_D,
+                                       BLOCK_SIZE,
+                                       BLOCK_SIZE)
 
-                # If player 1 spot place green square
-                if game_board.grid[y][x] == 1:
-                    pygame.draw.rect(screen, green, rect)
+                    # If usable spot place white square
+                    if game_board.grid[y][x] == 0:
+                        pygame.draw.rect(screen, white, rect)
 
-                # If player 1 selected spot place dark green square
-                if game_board.grid[y][x] == 10:
-                    pygame.draw.rect(screen, dark_green, rect)
+                    # If player 1 spot place green square
+                    if game_board.grid[y][x] == 1:
+                        pygame.draw.rect(screen, green, rect)
 
-                # If player 2 spot place blue square
-                if game_board.grid[y][x] == 2:
-                    pygame.draw.rect(screen, blue, rect)
+                    # If player 1 selected spot place dark green square
+                    if game_board.grid[y][x] == 10:
+                        pygame.draw.rect(screen, dark_green, rect)
 
-                # If player 2 selected spot place dark blue square
-                if game_board.grid[y][x] == 20:
-                    pygame.draw.rect(screen, dark_blue, rect)
+                    # If player 2 spot place blue square
+                    if game_board.grid[y][x] == 2:
+                        pygame.draw.rect(screen, blue, rect)
 
-                # empty cells that a player can move to in phase two are assigned 3
-                if game_board.grid[y][x] == 3:
-                    pygame.draw.rect(screen, orange, rect)
+                    # If player 2 selected spot place dark blue square
+                    if game_board.grid[y][x] == 20:
+                        pygame.draw.rect(screen, dark_blue, rect)
 
-        # used for output of data
-        display_stats(player_to_use, player_1, player_2)
+                    # empty cells that a player can move to in phase two are assigned 3
+                    if game_board.grid[y][x] == 3:
+                        pygame.draw.rect(screen, orange, rect)
 
-        # if mill_check, display text, needs remove piece function
-        if player_to_use.new_mill:
-            GAME_FONT.render_to(screen, (25, 150), " Mill found!", white)
+            # used for output of data
+            display_stats(player_to_use, player_1, player_2)
 
-        # This is to output the menu button
-        pygame.draw.rect(screen, white, (40, 450, 80, 40))
-        GAME_FONT.render_to(screen, (50, 460), "Menu", (100, 100, 100))
+            # if mill_check, display text, needs remove piece function
+            if player_to_use.new_mill:
+                GAME_FONT.render_to(screen, (25, 150), " Mill found!", white)
 
-        pygame.display.flip()
+            # This is to output the menu button
+            pygame.draw.rect(screen, white, (40, 450, 80, 40))
+            GAME_FONT.render_to(screen, (50, 460), "Menu", (100, 100, 100))
+
+            pygame.display.flip()
 
 
 def computer_game():
