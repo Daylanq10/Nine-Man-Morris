@@ -5,14 +5,15 @@ SEPARATED FUNCTIONS FROM MAIN FILE TO ENABLE PYTEST
 """
 
 """
-BOARD WONT ALLOW CLICKING TO CHANGE TURN UNNECESSARILY UNLESS MOVING/FLYING ANYTHING
-THAT NEEDS MORE THAN SINGLE CLICK. NEED TO FIX.
+ONLY ISSUE I AM AWARE OF IS THAT THE MOVE WILL CHANGE IF YOU CLICK ON ANY (PLAYABLE) POSITION ON THE BOARD. PLAYABLE
+IN THIS CONTEXT MEANS ANY PLACE ON THE BOARD THAT COULD POSSIBLY BE USED BY ANY PLAYER AT ANY TIME. COULD POSSIBLY BE 
+FIXED BY SOME SORT OF CONDITION INVOLVING THE POSITION THAT HAS BEEN CLICKED AND DECREMENTING PLAYER OBJECT "MOVES"
+WHICH KEEPS TRACK OF TURNS AND WHO IS CURRENTLY IN PLAY.
 """
 
 import pygame
 import pygame.freetype
 import pygame_menu
-import copy
 import board
 import player
 
@@ -232,11 +233,15 @@ def check_adjacent(x: int, y: int, game_board: board.Board, current_player: play
                 count += 1
                 positions.append((i, y))
         mills += mill_found(count, current_player, positions)
+
+        if mills > 0:
+            current_player.moves -= 1
+
         return mills
 
 
 # finds adjacent moves in phase 2
-def find_moves(location: tuple):
+def find_moves(location: tuple) -> list:
     """
     Finds adjacent moves that are playable for phase 2 and returns a list of playable spots
     """
@@ -327,6 +332,7 @@ def place_piece(game_board: board.Board, location: tuple, current_player: player
     current_player.start_tokens -= 1
     current_player.board_tokens += 1
     current_player.inc_moves()
+    current_player.board_positions.append(location)
     # Check if this created a mill and how many
     check_adjacent(location[0], location[1], game_board, current_player)
 
@@ -372,7 +378,9 @@ def move_piece(game_board: board.Board, location: tuple, current_player: player.
                 current_player.mills -= 1
 
         # move has been made so resetting stats for current player
+        current_player.board_positions.remove(current_player.clicked_pos)
         current_player.clicked_pos = None
+        current_player.board_positions.append(location)
         current_player.past_possible = []
         current_player.inc_moves()
 
@@ -417,7 +425,9 @@ def fly_piece(game_board: board.Board, location: tuple, current_player: player.P
                 current_player.mills -= 1
 
         # move has been made so resetting stats for current player
+        current_player.board_positions.remove(current_player.clicked_pos)
         current_player.clicked_pos = None
+        current_player.board_positions.append(location)
         current_player.past_possible = []
         current_player.inc_moves()
 
@@ -462,10 +472,6 @@ def remove_piece(game_board: board.Board, location: tuple,
     # If a mill just occurred and a piece is about to be removed
     removable = True
 
-    # If location in not usable then pass through function
-    if (location[0] < 0) or (location[1] < 0):
-        pass
-
     if current_player.number == 1:
         opposing_player = second_player
     else:
@@ -508,53 +514,40 @@ def remove_piece(game_board: board.Board, location: tuple,
                     opposing_player.mills -= 1
             # Remove token from Player 2
             opposing_player.board_tokens -= 1
+            opposing_player.board_positions.remove(location)
+            current_player.moves += 1
 
 
-def playable(game_board: board.Board, first_player: player.Player, second_player: player.Player) -> bool:
+def playable(game_board: board.Board, current_player: player.Player) -> bool:
     """
     This checks the board with the current player and uses find_moves to determine if there is a playable move.
-    Returns true if there is a playable move and false if there is not.
-    Using import of copy to make deepcopy
+    Returns true if there is a usable move and false if there is not.
     """
-    """
-    # Dictates which piece to look for
-    if first_player.turn:
-        piece = 1
-    if second_player.turn:
-        piece = 2
+    usable_moves = False
 
-    # Counter to determine if playable spots are avaliable
-    play_spot = 0
+    #Empty board
+    if not current_player.board_positions:
+        usable_moves = True
 
-    temp_board = copy.deepcopy(board)
+    for item in current_player.board_positions:
+        positions = find_moves(item)
+        for spots in positions:
+            if game_board.grid[spots[0]][spots[1]] == 0:
+                usable_moves = True
+                break
 
-    # Checks for pieces that are playable and uses find_moves
-    for row in range(7):
-        for col in range(7):
-            if temp_board.grid[row][col] == piece:
-                find_moves(temp_board, (row, col))
-
-    # If find_moves placed 3 on grid then increment counter
-    for row in temp_board.grid:
-        if 3 in row:
-            play_spot += 1
-
-    if play_spot > 0:
-        return True
-    else:
-        return False
-        """
-    pass
+    return usable_moves
 
 
-def display_stats(current_player: player.Player, first_player: player.Player, second_player: player.Player):
+def display_stats(game_board: board.Board, current_player: player.Player, first_player: player.Player,
+                  second_player: player.Player):
     """
     This takes into account whose turn is coming next. It is set to the next turn because the swap_player
     function does not update until the next iteration of the game update. Ensured to start player 1.
     """
     # USE PLAYER STATS TO WORK ON DISPLAY
 
-    if current_player.number == 2 or first_player.board_tokens == 0 or first_player.new_mill\
+    if current_player.number == 2 or first_player.board_tokens == 0 or first_player.new_mill \
             or first_player.stage == "Stage 2: Moving" and first_player.clicked_pos is not None:
         upcoming_player = first_player
         player_turn = "Player 1's turn"
@@ -570,6 +563,11 @@ def display_stats(current_player: player.Player, first_player: player.Player, se
         current_player.stage = "Stage 2: Moving"
     elif upcoming_player.start_tokens == 0 and upcoming_player.board_tokens == 3:
         current_player.stage = "Stage 3: Flying"
+    if not playable(game_board, upcoming_player) and current_player.start_tokens == 0 and upcoming_player.stage == 0\
+            and upcoming_player.board_tokens >= 3:
+        current_player.stage = "Game Over: no moves"
+    if playable(game_board, upcoming_player) and current_player.start_tokens == 0 and upcoming_player.board_tokens < 3:
+        current_player.stage = "Game Over"
 
     # If stage one
     if current_player.stage == "Stage 1: Placing":
@@ -611,26 +609,25 @@ def display_stats(current_player: player.Player, first_player: player.Player, se
     elif current_player.stage == "Game Over: no moves" or current_player.stage == "Game Over":
         # Displays a popup endgame message
 
-        """
         if current_player.stage == "Game Over":
             pass
             # FIGURE OUT WHAT TO DO HERE
-            printout = str(other.get_total_tokens()) + " to 2!"
+            printout = str(current_player.get_total_tokens()) + " to 2!"
 
         else:
             printout = "No playable moves!"
-        if player.number:
+        if current_player.number == 1:
             STAT_FONT.render_to(
-                screen, (40, 350), "Player 2 Wins " + printout, (100, 100, 100))
+                screen, (40, 350), "Player 1 Wins", (100, 100, 100))
         else:
             STAT_FONT.render_to(
-                screen, (40, 350), "Player 1 Wins " + printout, (100, 100, 100))
+                screen, (40, 350), "Player 2 Wins", (100, 100, 100))
+        STAT_FONT.render_to(screen, (40, 300), printout, (100, 100, 100))
         STAT_FONT.render_to(
             screen, (40, 400), "Hit menu to exit!", (100, 100, 100))
         # Displays current stage of Game Over
         GAME_FONT.render_to(
             screen, (40, 50), current_player.stage, (100, 100, 100))
-            """
 
 
 def two_player_game():
@@ -678,7 +675,6 @@ def two_player_game():
 
                     # This is a standard move
                     else:
-                        # Updates game grid in console
                         player_to_use = swap_player(player_1, player_2)
                         update_grid(game_board, drop_location(pos), player_to_use)
 
@@ -735,7 +731,7 @@ def two_player_game():
                         pygame.draw.rect(screen, orange, rect)
 
             # used for output of data
-            display_stats(player_to_use, player_1, player_2)
+            display_stats(game_board, player_to_use, player_1, player_2)
 
             # if mill_check, display text, needs remove piece function
             if player_to_use.new_mill:

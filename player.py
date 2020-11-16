@@ -12,6 +12,7 @@ class Player:
 
         self.start_tokens = 9
         self.board_tokens = 0
+        self.board_positions = []
 
         self.mills = 0  # needs to be updated in functions to allow for certain criteria
         self.mill_positions = []
