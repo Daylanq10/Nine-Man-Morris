@@ -76,6 +76,7 @@ BLOCK_SIZE = 75
 # Works with pygame.freetype import to allow easier display of words to screen
 GAME_FONT = pygame.freetype.Font(None, 24)
 STAT_FONT = pygame.freetype.Font(None, 20)
+TRAPPED_FONT = pygame.freetype.Font(None, 18)
 
 
 def menu():
@@ -659,7 +660,7 @@ def playable(board: board.Board, first_player: player.Player, second_player: pla
     # Dictates which piece to look for
     if first_player.turn:
         piece = 1
-    if second_player.turn:
+    else:
         piece = 2
 
     # Counter to determine if playable spots are avaliable
@@ -744,14 +745,16 @@ def display_stats(turn: str, stage: str):
             printout = "No playable moves!"
         if player.number:
             STAT_FONT.render_to(
-                screen, (40, 350), "Player 2 Wins " + printout, (100, 100, 100))
+                screen, (40, 350), printout, (100, 100, 100))
+            STAT_FONT.render_to(
+                screen, (40, 400), "Player 2 Wins ", (100, 100, 100))
         else:
             STAT_FONT.render_to(
-                screen, (40, 350), "Player 1 Wins " + printout, (100, 100, 100))
-        STAT_FONT.render_to(
-            screen, (40, 400), "Hit menu to exit!", (100, 100, 100))
+                screen, (40, 350), printout, (100, 100, 100))
+            STAT_FONT.render_to(
+                screen, (40, 400), "Player 1 Wins ", (100, 100, 100))
         # Displays current stage of Game Over
-        GAME_FONT.render_to(
+        TRAPPED_FONT.render_to(
             screen, (40, 50), stage, (100, 100, 100))
 
 
