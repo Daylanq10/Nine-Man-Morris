@@ -37,32 +37,3 @@ def test_drop_location_2():
     """Checks drop location is correct"""
     location = game_functions.drop_location((400, 400))
     assert location == (3, 1)
-
-
-def test_adjacent_1():
-    """Checks no mill is present"""
-    test_grid = game_functions.create_board()
-    assert game_functions.check_adjacent(x=0, y=0, board=test_grid, p=1) == 0
-
-
-def test_adjacent_2():
-    """Checks horizontal mill"""
-    test_grid = game_functions.board.Board()
-    test_grid = test_grid.create_board()
-    test_grid[0][0] = 1
-    test_grid[0][3] = 1
-    test_grid[0][6] = 1
-
-    assert game_functions.check_adjacent(x=0, y=6, board=test_grid, player_piece=1) == 1
-
-
-def test_adjacent_3():
-    """Checks vertical mill"""
-    test_grid = board.Board()
-    test_grid = test_grid.create_board()
-    test_grid[2][2] = 2
-    test_grid[3][2] = 2
-    test_grid[4][2] = 2
-
-    assert game_functions.check_adjacent(x=4, y=2, board=test_grid, player_piece=2) == 1
-
