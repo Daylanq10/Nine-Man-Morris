@@ -31,6 +31,7 @@ THE ACUTAL GAME BOARD. NEEDS TO BE MOVED AROUND A LITTLE FOR PRETTIER GUI.
 
 
 # Initializing both players
+from monte_carlo_computer import monte_carlo
 import pygame
 import pygame.freetype
 import pygame_menu
@@ -923,7 +924,5 @@ def two_player_game():
 
 
 def computer_game():
-    """
-    This will be used for future game mode to play against computer
-    """
+
     pass
